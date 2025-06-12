@@ -35,12 +35,18 @@ func (ui *UI) initIO() {
 		}
 
 		keysData := ui.io.KeysData()
+		mappedVal, contains := keyMap[button]
+		if contains {
+			mappedVal = mappedVal - 512
+		} else {
+			mappedVal = imgui.Key(button + 8)
+		}
 
 		switch action {
 		case pixel.Press:
-			keysData[keyMap[button]].SetDown(true)
+			keysData[mappedVal].SetDown(true)
 		case pixel.Release:
-			keysData[keyMap[button]].SetDown(false)
+			keysData[mappedVal].SetDown(false)
 		}
 
 		ui.io.SetKeysData(&keysData)

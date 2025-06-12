@@ -18,17 +18,18 @@ type alpha8Image struct {
 // loadFont parses the imgui font data and creates a pixel picture from it.
 func (ui *UI) loadFont() {
 	//f := ui.fonts.TextureDataAlpha8()
+	fPx, fWidth, fHeight, _ := ui.fonts.GetTextureDataAsRGBA32()
 	f := alpha8Image{
-		Width:  int(ui.fonts.TexWidth()),
-		Height: int(ui.fonts.TexHeight()),
-		Pixels: unsafe.Pointer(ui.fonts.TexPixelsAlpha8()),
+		Width:  int(fWidth),
+		Height: int(fHeight),
+		Pixels: fPx,
 	}
 	pic := image.NewRGBA(image.Rect(0, 0, f.Width, f.Height))
 
 	for y := 0; y < f.Height; y++ {
 		for x := 0; x < f.Width; x++ {
 			i := y*f.Width + x
-			ptr := (*uint8)(unsafe.Pointer(uintptr(f.Pixels) + uintptr(i)))
+			ptr := (*uint8)(unsafe.Pointer(uintptr(f.Pixels) + uintptr(i*4+3)))
 			pic.SetRGBA(x, y, color.RGBA{0, 0, 0, *ptr})
 		}
 	}
