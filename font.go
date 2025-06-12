@@ -7,12 +7,22 @@ import (
 	"os"
 	"unsafe"
 
-	"github.com/inkyblackness/imgui-go/v4"
+	"github.com/AllenDang/cimgui-go/imgui"
 )
+
+type alpha8Image struct {
+	Width, Height int
+	Pixels        unsafe.Pointer
+}
 
 // loadFont parses the imgui font data and creates a pixel picture from it.
 func (ui *UI) loadFont() {
-	f := ui.fonts.TextureDataAlpha8()
+	//f := ui.fonts.TextureDataAlpha8()
+	f := alpha8Image{
+		Width:  int(ui.fonts.TexWidth()),
+		Height: int(ui.fonts.TexHeight()),
+		Pixels: unsafe.Pointer(ui.fonts.TexPixelsAlpha8()),
+	}
 	pic := image.NewRGBA(image.Rect(0, 0, f.Width, f.Height))
 
 	for y := 0; y < f.Height; y++ {
@@ -26,7 +36,7 @@ func (ui *UI) loadFont() {
 	ui.atlas.Clear(ui.group)
 	ui.font = ui.group.AddImage(pic)
 	ui.atlas.Pack()
-	ui.fonts.SetTextureID(imgui.TextureID(ui.font.ID()))
+	ui.fonts.SetTexID(imgui.TextureID(ui.font.ID()))
 }
 
 // loadDefaultFont loads the imgui default font if the user wants it.

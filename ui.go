@@ -3,8 +3,8 @@ package pixelui
 import (
 	"C"
 
+	"github.com/AllenDang/cimgui-go/imgui"
 	"github.com/gopxl/pixel/v2"
-	"github.com/inkyblackness/imgui-go/v4"
 )
 import (
 	"image/color"
@@ -49,8 +49,9 @@ void main() {
 type UI struct {
 	win        *opengl.Window
 	context    *imgui.Context
-	io         imgui.IO
-	fonts      imgui.FontAtlas
+	io         *imgui.IO
+	platformIO *imgui.PlatformIO
+	fonts      *imgui.FontAtlas
 	timer      time.Time
 	shader     *opengl.GLShader
 	matrix     pixel.Matrix
@@ -58,7 +59,7 @@ type UI struct {
 	atlas      *atlas.Atlas
 	group      atlas.Group
 	font       atlas.TextureId
-	cursors    map[imgui.MouseCursorID]*opengl.Cursor
+	cursors    map[imgui.MouseCursor]*opengl.Cursor
 }
 
 var CurrentUI *UI
@@ -74,7 +75,7 @@ const (
 func New(win *opengl.Window, atlas *atlas.Atlas, flags uint8) *UI {
 	var context *imgui.Context
 	mainthread.Call(func() {
-		context = imgui.CreateContext(nil)
+		context = imgui.CreateContext()
 	})
 
 	ui := &UI{
@@ -82,11 +83,12 @@ func New(win *opengl.Window, atlas *atlas.Atlas, flags uint8) *UI {
 		context: context,
 		atlas:   atlas,
 		group:   atlas.MakeGroup(),
-		cursors: make(map[imgui.MouseCursorID]*opengl.Cursor),
+		cursors: make(map[imgui.MouseCursor]*opengl.Cursor),
 	}
 	CurrentUI = ui
 
 	ui.io = imgui.CurrentIO()
+	ui.platformIO = imgui.CurrentPlatformIO()
 	ui.initIO()
 
 	ui.fonts = ui.io.Fonts()
@@ -106,7 +108,7 @@ func New(win *opengl.Window, atlas *atlas.Atlas, flags uint8) *UI {
 
 // Destroy cleans up the imgui context
 func (ui *UI) destroy() {
-	ui.context.Destroy()
+	ui.context.InternalDestroy()
 }
 
 // NewFrame Call this at the beginning of the frame to tell the UI that the frame has started
@@ -142,7 +144,7 @@ func (ui *UI) Draw(win *opengl.Window) {
 
 	// Tell imgui to render and get the resulting draw data
 	imgui.Render()
-	data := imgui.RenderedDrawData()
+	data := imgui.CurrentDrawData()
 
 	// Since we have to redraw all of the triangles every frame,
 	//	only resize the triangles list when we need to, and truncate
@@ -156,16 +158,16 @@ func (ui *UI) Draw(win *opengl.Window) {
 	indexSize := imgui.IndexBufferLayout()
 	for _, cmds := range data.CommandLists() {
 		var indexBufferOffset uintptr
-		start, _ := cmds.VertexBuffer()
-		idxStart, _ := cmds.IndexBuffer()
+		start, _ := cmds.GetVertexBuffer()
+		idxStart, _ := cmds.GetIndexBuffer()
 
 		for _, cmd := range cmds.Commands() {
 			if cmd.HasUserCallback() {
 				cmd.CallUserCallback(cmds)
 			} else {
-				count := cmd.ElementCount()
+				count := cmd.ElemCount()
 				iStart := totalTris
-				totalTris += count
+				totalTris += int(count)
 
 				if ui.shaderTris.Len() < totalTris {
 					ui.shaderTris.SetLen(totalTris)
@@ -176,7 +178,7 @@ func (ui *UI) Draw(win *opengl.Window) {
 				clipRect.Max = ui.matrix.Project(clipRect.Max)
 				clipRect = clipRect.Norm()
 
-				id := uint32(cmd.TextureID())
+				id := uint32(cmd.TexID())
 				spr := ui.atlas.Get(id)
 				texRect := spr.Frame()
 
@@ -185,7 +187,7 @@ func (ui *UI) Draw(win *opengl.Window) {
 					intensity = 1.0
 				}
 
-				for i := 0; i < count; i++ {
+				for i := 0; i < int(count); i++ {
 					idx := unsafe.Pointer(uintptr(idxStart) + indexBufferOffset)
 					index := *(*uint16)(idx)
 					ptr := unsafe.Pointer(uintptr(start) + (uintptr(int(index) * vertexSize)))

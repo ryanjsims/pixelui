@@ -1,43 +1,49 @@
 package pixelui
 
 import (
+	"github.com/AllenDang/cimgui-go/imgui"
 	"github.com/gopxl/pixel/v2"
 	"github.com/gopxl/pixel/v2/backends/opengl"
-	"github.com/inkyblackness/imgui-go/v4"
 )
 
 type Clipboard struct {
 	win *opengl.Window
 }
 
-func (c Clipboard) Text() (text string, err error) {
+func (c Clipboard) GetClipboard() (text string) {
 	text = c.win.ClipboardText()
 	return
 }
 
-func (c Clipboard) SetText(value string) {
+func (c Clipboard) SetClipboard(value string) {
 	c.win.SetClipboardText(value)
 }
 
 func (ui *UI) initIO() {
 	ui.io.SetDisplaySize(IVec(ui.win.Bounds().Size()))
-	ui.io.SetClipboard(Clipboard{win: ui.win})
+	ui.platformIO.SetClipboardHandler(Clipboard{win: ui.win})
 
-	for k, v := range keyMap {
-		ui.io.KeyMap(v, int(k))
-	}
+	// keysData := ui.io.KeysData()
+	// for k, v := range keyMap {
+	// 	ui.io.KeyMap(v, int(k))
+	// 	keysData[k].
+	// }
 
 	ui.win.SetButtonCallback(func(win *opengl.Window, button pixel.Button, action pixel.Action) {
 		if !button.IsKeyboardButton() {
 			return
 		}
 
+		keysData := ui.io.KeysData()
+
 		switch action {
 		case pixel.Press:
-			ui.io.KeyPress(int(button))
+			keysData[keyMap[button]].SetDown(true)
 		case pixel.Release:
-			ui.io.KeyRelease(int(button))
+			keysData[keyMap[button]].SetDown(false)
 		}
+
+		ui.io.SetKeysData(&keysData)
 	})
 
 	ui.io.SetBackendFlags(imgui.BackendFlagsHasMouseCursors | imgui.BackendFlagsHasSetMousePos)
@@ -55,16 +61,16 @@ func (ui *UI) prepareIO() {
 
 	ui.io.AddMouseWheelDelta(float32(ui.win.MouseScroll().X), float32(ui.win.MouseScroll().Y))
 	mouse := ui.matrix.Unproject(ui.win.MousePosition())
-	ui.io.SetMousePosition(imgui.Vec2{X: float32(mouse.X), Y: float32(mouse.Y)})
+	ui.io.SetMousePos(imgui.Vec2{X: float32(mouse.X), Y: float32(mouse.Y)})
 
 	ui.io.SetMouseButtonDown(0, ui.win.Pressed(pixel.MouseButtonLeft))
 	ui.io.SetMouseButtonDown(1, ui.win.Pressed(pixel.MouseButtonRight))
 	ui.io.SetMouseButtonDown(2, ui.win.Pressed(pixel.MouseButtonMiddle))
 
-	ui.io.AddInputCharacters(ui.win.Typed())
+	ui.io.AddInputCharactersUTF8(ui.win.Typed())
 	ui.updateKeyMod()
 
-	c, has := ui.cursors[imgui.MouseCursor()]
+	c, has := ui.cursors[ui.io.Ctx().MouseCursor()]
 	if !has {
 		c = ui.cursors[imgui.MouseCursorArrow]
 	}
@@ -73,10 +79,10 @@ func (ui *UI) prepareIO() {
 
 // updateKeyMod tells imgui.io where to find our key modifiers
 func (ui *UI) updateKeyMod() {
-	ui.io.KeyCtrl(int(pixel.KeyLeftControl), int(pixel.KeyRightControl))
-	ui.io.KeyShift(int(pixel.KeyLeftShift), int(pixel.KeyRightShift))
-	ui.io.KeyAlt(int(pixel.KeyLeftAlt), int(pixel.KeyRightAlt))
-	ui.io.KeySuper(int(pixel.KeyLeftSuper), int(pixel.KeyRightSuper))
+	ui.io.SetKeyCtrl(ui.win.Pressed(pixel.KeyLeftControl) || ui.win.Pressed(pixel.KeyRightControl))
+	ui.io.SetKeyShift(ui.win.Pressed(pixel.KeyLeftShift) || ui.win.Pressed(pixel.KeyRightShift))
+	ui.io.SetKeyAlt(ui.win.Pressed(pixel.KeyLeftAlt) || ui.win.Pressed(pixel.KeyRightAlt))
+	ui.io.SetKeySuper(ui.win.Pressed(pixel.KeyLeftSuper) || ui.win.Pressed(pixel.KeyRightSuper))
 }
 
 // inputWant is a helper for determining what type a button is: keyboard/mouse
@@ -140,7 +146,7 @@ func (ui *UI) KeySuper() bool {
 }
 
 var (
-	keyMap = map[pixel.Button]int{
+	keyMap = map[pixel.Button]imgui.Key{
 		pixel.KeyTab:       imgui.KeyTab,
 		pixel.KeyLeft:      imgui.KeyLeftArrow,
 		pixel.KeyRight:     imgui.KeyRightArrow,

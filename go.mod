@@ -1,11 +1,13 @@
 module github.com/gopxl/pixelui/v2
 
-go 1.21
+go 1.24.0
+
+toolchain go1.24.4
 
 require (
+	github.com/AllenDang/cimgui-go v1.3.1
 	github.com/gopxl/mainthread/v2 v2.1.1
 	github.com/gopxl/pixel/v2 v2.3.0
-	github.com/inkyblackness/imgui-go/v4 v4.7.0
 )
 
 require (

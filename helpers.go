@@ -1,6 +1,6 @@
 package pixelui
 
-import "github.com/inkyblackness/imgui-go/v4"
+import "github.com/AllenDang/cimgui-go/imgui"
 
 // Color converts the given 8-bit r,g,b components to a imgui.Vec4 for color arguments
 func Color(r, g, b uint8) imgui.Vec4 {

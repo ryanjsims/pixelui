@@ -1,8 +1,8 @@
 package pixelui
 
 import (
+	"github.com/AllenDang/cimgui-go/imgui"
 	"github.com/gopxl/pixel/v2"
-	"github.com/inkyblackness/imgui-go/v4"
 )
 
 // imguiRectToPixelRect Converts the imgui rect to a Pixel rect
