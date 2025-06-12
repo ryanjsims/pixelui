@@ -116,6 +116,9 @@ func (ui *UI) NewFrame() {
 	if !ui.timer.IsZero() {
 		ui.io.SetDeltaTime(float32(time.Since(ui.timer).Seconds()))
 	}
+	if ui.io.DeltaTime() <= 0.0 {
+		ui.io.SetDeltaTime(0.001)
+	}
 	ui.timer = time.Now()
 
 	// imgui requires that io be set before calling NewFrame
