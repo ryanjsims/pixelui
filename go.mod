@@ -1,4 +1,4 @@
-module github.com/gopxl/pixelui/v2
+module github.com/ryanjsims/pixelui/v2
 
 go 1.24.0
 
