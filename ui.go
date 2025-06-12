@@ -111,9 +111,10 @@ func (ui *UI) destroy() {
 
 // NewFrame Call this at the beginning of the frame to tell the UI that the frame has started
 func (ui *UI) NewFrame() {
-	ui.io.SetDeltaTime(0.001)
-	if !ui.timer.IsZero() {
+	if !ui.timer.IsZero() && time.Since(ui.timer).Seconds() > 0.0 {
 		ui.io.SetDeltaTime(float32(time.Since(ui.timer).Seconds()))
+	} else {
+		ui.io.SetDeltaTime(0.001)
 	}
 	ui.timer = time.Now()
 
